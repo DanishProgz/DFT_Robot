@@ -1,0 +1,8 @@
+build/
+Debug/
+Release/
+*.o
+*.d
+*.elf
+*.bin
+
