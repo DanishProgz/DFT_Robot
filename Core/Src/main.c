@@ -48,48 +48,18 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-#define CMD_BUF_SIZE 64
-
-uint8_t rx_byte;
-char cmd_buf[CMD_BUF_SIZE];
-uint8_t cmd_index = 0;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void send_uart(const char *msg)
-{
-    HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), 100);
-}
-
-int steps;
-void Process_Command(char *cmd)
-{
-    if (strcmp(cmd, "UP") == 0)
-    {
-        Stepper_Move(10);
-        send_uart("OK UP\r\n");
-    }
-    else if (strcmp(cmd, "DOWN") == 0)
-    {
-        Stepper_Move(-10);
-        send_uart("OK DOWN\r\n");
-    }
-    else
-    {
-        send_uart("ERR\r\n");
-    }
-}
-
-
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint32_t check;
+
 /* USER CODE END 0 */
 
 /**
@@ -107,7 +77,6 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -128,29 +97,13 @@ int main(void)
 
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
 
-  Stepper_Move(1000);
+  Stepper_Move(800);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-//  int steps = -8000000;
   while (1)
   {
-
-
-
-
-//	  Stepper_Move(steps);
-//	  check = Stepper_IsBusy();
-//	  while(check){
-//		  check = Stepper_IsBusy();
-//	  }
-//	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
-
-
-
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -205,36 +158,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    if (huart->Instance == USART2)
-    {
-        if (rx_byte == '\r' || rx_byte == '\n')
-        {
-            if (cmd_index > 0)
-            {
-                cmd_buf[cmd_index] = '\0';
-
-                Process_Command(cmd_buf);
-
-                cmd_index = 0;
-            }
-        }
-        else
-        {
-            if (cmd_index < CMD_BUF_SIZE - 1)
-            {
-                cmd_buf[cmd_index++] = rx_byte;
-            }
-        }
-
-        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
-    }
-}
-
-
 
 /* USER CODE END 4 */
 

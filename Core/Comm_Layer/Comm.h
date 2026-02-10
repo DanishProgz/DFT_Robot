@@ -12,12 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void UartConsole_Init(UART_HandleTypeDef *huart);
-void UartConsole_Task(void);                 // call in main loop
-void UartConsole_Send(const uint8_t *data, uint16_t len);
-void UartConsole_Printf(const char *fmt, ...);
+
+extern uint8_t rx_byte;
 
 
 
-void UartConsole_RxCpltCallback(UART_HandleTypeDef *huart);
+void Process_Command(char *cmd);
 #endif
