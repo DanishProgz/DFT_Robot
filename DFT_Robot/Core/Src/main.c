@@ -55,8 +55,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t check = 1;
-
+uint32_t check;
 /* USER CODE END 0 */
 
 /**
@@ -108,12 +107,6 @@ int steps = -8000000;
 	  }
 
 	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
-
-//	  Stepper_Init();
-//	  HAL_Delay(10);
-
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
