@@ -59,18 +59,30 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
-#define CLK_POS_Pin GPIO_PIN_0
-#define CLK_POS_GPIO_Port GPIOA
-#define CLK_NEG_Pin GPIO_PIN_1
-#define CLK_NEG_GPIO_Port GPIOA
-#define EN_NEG_Pin GPIO_PIN_12
-#define EN_NEG_GPIO_Port GPIOB
-#define EN_POS_Pin GPIO_PIN_13
-#define EN_POS_GPIO_Port GPIOB
-#define CW_NEG_Pin GPIO_PIN_14
-#define CW_NEG_GPIO_Port GPIOB
-#define CW_POS_Pin GPIO_PIN_15
-#define CW_POS_GPIO_Port GPIOB
+#define M1_CLK_POS_Pin GPIO_PIN_0
+#define M1_CLK_POS_GPIO_Port GPIOA
+#define M1_CLK_NEG_Pin GPIO_PIN_1
+#define M1_CLK_NEG_GPIO_Port GPIOA
+#define M1_EN_NEG_Pin GPIO_PIN_12
+#define M1_EN_NEG_GPIO_Port GPIOB
+#define M1_EN_POS_Pin GPIO_PIN_13
+#define M1_EN_POS_GPIO_Port GPIOB
+#define M1_CW_NEG_Pin GPIO_PIN_14
+#define M1_CW_NEG_GPIO_Port GPIOB
+#define M1_CW_POS_Pin GPIO_PIN_15
+#define M1_CW_POS_GPIO_Port GPIOB
+#define M2_CLK_POS_Pin GPIO_PIN_4
+#define M2_CLK_POS_GPIO_Port GPIOB
+#define M2_CLK_NEG_Pin GPIO_PIN_5
+#define M2_CLK_NEG_GPIO_Port GPIOB
+#define M2_CW_POS_Pin GPIO_PIN_6
+#define M2_CW_POS_GPIO_Port GPIOB
+#define M2_CW_NEG_Pin GPIO_PIN_7
+#define M2_CW_NEG_GPIO_Port GPIOB
+#define M2_EN_POS_Pin GPIO_PIN_8
+#define M2_EN_POS_GPIO_Port GPIOB
+#define M2_EN_NEG_Pin GPIO_PIN_9
+#define M2_EN_NEG_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -21,9 +21,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "stm32f4xx_it.h"
-#include "stdio.h"
-#include "string.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stepper.h"
@@ -77,6 +75,7 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -92,12 +91,16 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  Stepper_Init();
+  Stepper_Init(LegMotor_1);
+  Stepper_Init(LegMotor_2);
 
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
 
-  Stepper_Move(800);
+  Stepper_Move(LegMotor_1, 800);
+  Stepper_Move(LegMotor_2, 800);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

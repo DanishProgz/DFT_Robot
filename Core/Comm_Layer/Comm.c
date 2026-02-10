@@ -26,12 +26,15 @@ void Process_Command(char *cmd)
 {
     if (strcmp(cmd, "UP") == 0)
     {
-        Stepper_Move(10);
+        Stepper_Move(LegMotor_1, 10);
+        Stepper_Move(LegMotor_2, 10);
+
         send_uart("OK UP\r\n");
     }
     else if (strcmp(cmd, "DOWN") == 0)
     {
-        Stepper_Move(-10);
+        Stepper_Move(LegMotor_1, -10);
+        Stepper_Move(LegMotor_2, -10);
         send_uart("OK DOWN\r\n");
     }
     else

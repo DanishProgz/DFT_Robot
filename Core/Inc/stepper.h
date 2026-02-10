@@ -20,7 +20,7 @@
 
 /* TIM2 handle - defined in tim.c by CubeMX */
 extern TIM_HandleTypeDef htim2;
-
+extern TIM_HandleTypeDef htim3;
 /* Configuration */
 #define STEPPER_STEPS_PER_REV   3200
 
@@ -42,15 +42,23 @@ typedef struct {
     uint8_t             direction;
 } Stepper_Handle_t;
 
+
+typedef enum {
+	LegMotor_1,
+	LegMotor_2,
+	LegMotor_3,
+}Motor_ID;
 /* Public functions */
-void Stepper_Init(void);
-void Stepper_Move(int32_t steps);
-void Stepper_Stop(void);
-void Stepper_Enable(void);
-void Stepper_Disable(void);
-uint8_t Stepper_IsBusy(void);
+
+void Stepper_Init(Motor_ID M);
+void Stepper_Move(Motor_ID M, int32_t steps);
+void Stepper_Stop(Motor_ID M);
+uint8_t Stepper_IsBusy(Motor_ID M);
+void Stepper_Enable(Motor_ID M);
+void Stepper_Disable(Motor_ID M);
+
 
 /* Call this from TIM2 Update IRQ handler */
-void Stepper_IRQ_Handler(void);
+void Stepper_IRQ_Handler(Motor_ID M);
 
 #endif /* STEPPER_H */
