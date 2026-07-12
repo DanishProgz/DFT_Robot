@@ -25,7 +25,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stepper.h"
-#include "Comm.h"
+#include "board2.h"
+//#include "Comm.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,22 +92,43 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_USART2_UART_Init();
-  MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-  Stepper_Init(LegMotor_1);
-  Stepper_Init(LegMotor_2);
+//  Stepper_Init(LegMotor_1);
+//  Stepper_Init(LegMotor_2);
+//  Stepper_Init(LegMotor_3);
+//  HAL_UA0RT_Receive_IT(&huart2, &rx_byte, 1);
 
-  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+//  HAL_Delay(2000);
+//
+//  Stepper_Move(LegMotor_1, 8000000);
+//  Stepper_Move(LegMotor_2, 8000000);
+//  Stepper_Move(LegMotor_3, 8000000);
 
-  Stepper_Move(LegMotor_1, 800);
-  Stepper_Move(LegMotor_2, 800);
-
+  board2_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+//	    Stepper_SetDirection(LegMotor_1, STEPPER_CW);
+//	    Stepper_SetDirection(LegMotor_2, STEPPER_CW);
+//	    Stepper_SetDirection(LegMotor_3, STEPPER_CW);
+//	    Stepper_Move(LegMotor_1, 1600);
+//	    Stepper_Move(LegMotor_2, 1600);
+//	    HAL_Delay(2000);
+//    	Stepper_Run(LegMotor_3, 0);
+//	    HAL_Delay(2000);
+//		Stepper_Stop(LegMotor_3);
+//		HAL_Delay(2000);
+//		Stepper_Run(LegMotor_3, 1);
+//		HAL_Delay(2000);
+//		Stepper_Stop(LegMotor_3);
+
+
+	  board2_loop();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

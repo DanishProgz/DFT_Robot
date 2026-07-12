@@ -39,5 +39,20 @@
 #define M2_CWP_Pin M2_CW_POS_Pin
 #define M2_CWN_Pin M2_CW_NEG_Pin
 
+#define M3_CLKN_Port M3_CLK_NEG_GPIO_Port
+#define M3_CLKP_Port M3_CLK_POS_GPIO_Port
+#define M3_ENP_Port M3_EN_POS_GPIO_Port
+#define M3_ENN_Port M3_EN_NEG_GPIO_Port
+#define M3_CWP_Port M3_CW_POS_GPIO_Port
+#define M3_CWN_Port M3_CW_NEG_GPIO_Port
+
+#define M3_CLKP_Pin M3_CLK_POS_Pin
+#define M3_CLKN_Pin M3_CLK_NEG_Pin
+#define M3_ENP_Pin M3_EN_POS_Pin
+#define M3_ENN_Pin M3_EN_NEG_Pin
+#define M3_CWP_Pin M3_CW_POS_Pin
+#define M3_CWN_Pin M3_CW_NEG_Pin
+
+
 
 #endif

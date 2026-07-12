@@ -1,64 +1,46 @@
 /*
  * stepper.h
  * TB6560 Stepper Motor Driver for STM32F401CDU6
- *
- * Pin Mapping:
- *   CLK+  -> PA0  (TIM2_CH1 PWM output)
- *   CLK-  -> PA1  (GPIO LOW)
- *   CW+   -> PB15 (GPIO direction)
- *   CW-   -> PB14 (GPIO LOW)
- *   EN+   -> PB13 (GPIO enable)
- *   EN-   -> PB12 (GPIO LOW)
- *
- * Steps per revolution: 3200
  */
 
 #ifndef STEPPER_H
 #define STEPPER_H
 
-#include "main.h"
+#include "stm32f4xx_hal.h"
 
-/* TIM2 handle - defined in tim.c by CubeMX */
-extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim3;
-/* Configuration */
-#define STEPPER_STEPS_PER_REV   3200
+/* ---- Direction ---- */
+#define STEPPER_CW   1
+#define STEPPER_CCW  0
 
-/* Direction */
-#define STEPPER_CW              0
-#define STEPPER_CCW             1
-
-/* Motor state */
+/* ---- State ---- */
 typedef enum {
-    STEPPER_IDLE = 0,
-    STEPPER_RUNNING
+    STEPPER_IDLE    = 0,
+    STEPPER_RUNNING = 1,
 } Stepper_State_t;
 
-/* Stepper handle */
+/* ---- Motor IDs ---- */
+typedef enum {
+    LegMotor_1 = 0,
+    LegMotor_2 = 1,
+    LegMotor_3 = 2,
+} Motor_ID;
+
+/* ---- Handle ---- */
 typedef struct {
-    volatile uint32_t   target_steps;
-    volatile uint32_t   current_steps;
-    volatile Stepper_State_t state;
-    uint8_t             direction;
+    uint32_t        target_steps;   /* 0 = free run */
+    uint32_t        current_steps;
+    Stepper_State_t state;
+    uint8_t         direction;
 } Stepper_Handle_t;
 
-
-typedef enum {
-	LegMotor_1,
-	LegMotor_2,
-	LegMotor_3,
-}Motor_ID;
-/* Public functions */
-
-void Stepper_Init(Motor_ID M);
-void Stepper_Move(Motor_ID M, int32_t steps);
-void Stepper_Stop(Motor_ID M);
-uint8_t Stepper_IsBusy(Motor_ID M);
-void Stepper_Enable(Motor_ID M);
-void Stepper_Disable(Motor_ID M);
-
-
-/* Call this from TIM2 Update IRQ handler */
-void Stepper_IRQ_Handler(Motor_ID M);
+/* ---- Public API ---- */
+void     Stepper_Init(Motor_ID M);
+void     Stepper_Run(Motor_ID M, uint8_t dir);
+void     Stepper_Move(Motor_ID M, int32_t steps);
+uint32_t Stepper_Stop(Motor_ID M);
+void     Stepper_Enable(Motor_ID M);
+void     Stepper_Disable(Motor_ID M);
+uint8_t  Stepper_IsBusy(Motor_ID M);
+void     Stepper_IRQ_Handler(Motor_ID M);
 
 #endif /* STEPPER_H */

@@ -3,3 +3,19 @@ Release/
 *.elf
 *.map
 *.o
+
+# Build output (regenerated every build)
+Debug/
+*.o
+*.d
+*.su
+*.cyclo
+*.elf
+*.map
+*.list
+
+# STM32CubeIDE per-machine state (regenerated)
+*.launch
+.project
+.cproject
+.settings/

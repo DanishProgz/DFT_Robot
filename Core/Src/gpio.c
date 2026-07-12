@@ -53,12 +53,14 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(M1_CLK_NEG_GPIO_Port, M1_CLK_NEG_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(M2_EN_NEG_GPIO_Port, M2_EN_NEG_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, M1_CLK_NEG_Pin|RS485_DERE_PIN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, M1_EN_NEG_Pin|M1_EN_POS_Pin|M1_CW_NEG_Pin|M1_CW_POS_Pin
-                          |M2_CLK_NEG_Pin|M2_CW_POS_Pin|M2_CW_NEG_Pin|M2_EN_POS_Pin
-                          |M2_EN_NEG_Pin, GPIO_PIN_RESET);
+                          |M2_CLK_NEG_Pin|M2_CW_POS_Pin|M2_CW_NEG_Pin|M2_EN_POS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
@@ -67,6 +69,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : M2_EN_NEG_Pin */
+  GPIO_InitStruct.Pin = M2_EN_NEG_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(M2_EN_NEG_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : M1_CLK_NEG_Pin */
   GPIO_InitStruct.Pin = M1_CLK_NEG_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -74,16 +83,43 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(M1_CLK_NEG_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : RS485_DERE_PIN_Pin */
+  GPIO_InitStruct.Pin = RS485_DERE_PIN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(RS485_DERE_PIN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ENC_CLK_Pin */
+  GPIO_InitStruct.Pin = ENC_CLK_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(ENC_CLK_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ENC_DT_Pin */
+  GPIO_InitStruct.Pin = ENC_DT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(ENC_DT_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : M1_EN_NEG_Pin M1_EN_POS_Pin M1_CW_NEG_Pin M1_CW_POS_Pin
-                           M2_CLK_NEG_Pin M2_CW_POS_Pin M2_CW_NEG_Pin M2_EN_POS_Pin
-                           M2_EN_NEG_Pin */
+                           M2_CLK_NEG_Pin M2_CW_POS_Pin M2_CW_NEG_Pin M2_EN_POS_Pin */
   GPIO_InitStruct.Pin = M1_EN_NEG_Pin|M1_EN_POS_Pin|M1_CW_NEG_Pin|M1_CW_POS_Pin
-                          |M2_CLK_NEG_Pin|M2_CW_POS_Pin|M2_CW_NEG_Pin|M2_EN_POS_Pin
-                          |M2_EN_NEG_Pin;
+                          |M2_CLK_NEG_Pin|M2_CW_POS_Pin|M2_CW_NEG_Pin|M2_EN_POS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Drum_limit_switch_Pin */
+  GPIO_InitStruct.Pin = Drum_limit_switch_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Drum_limit_switch_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 

@@ -2,291 +2,255 @@
  * stepper.c
  * TB6560 Stepper Motor Driver for STM32F401CDU6
  *
- * Uses TIM2 CH1 (PA0) for hardware PWM pulse generation.
- * TIM2 Update Interrupt counts pulses and stops at target.
+ * Uses TIM2 CH1 (PA0) for Motor 1 PWM pulse generation.
+ * Uses TIM4 CH4 (PB9) for Motor 2 PWM pulse generation.
+ * Uses TIM3 CH2 (PA7) for Motor 3 PWM pulse generation.
+ * TIM Update Interrupts count pulses and stop at target (0 = free run).
  *
  * Timer Config (from CubeMX):
  *   - PSC  = 83   -> 84MHz / 84 = 1MHz tick
  *   - ARR  = 499  -> 1MHz / 500 = 2kHz step rate
- *   - CCR1 = 250  -> 50% duty cycle
- *
- * At 2kHz step rate with 3200 steps/rev:
- *   Full rotation = 3200 / 2000 = 1.6 seconds
+ *   - CCR  = 255  -> ~50% duty cycle
  */
 
 #include "stepper.h"
+#include "main.h"
+#include <string.h>
 
-#include "config.h"
+/* Timer handles from CubeMX */
+extern TIM_HandleTypeDef htim2;
 
+extern TIM_HandleTypeDef htim4;
 
+/* Private handles */
+static Stepper_Handle_t stepper1, stepper2, stepper3;
 
-/* Private handle */
-static Stepper_Handle_t stepper1, stepper2;
+/* ================================================================
+ * Pin Definitions (matching your working hardware config)
+ * ================================================================ */
 
-/* ---------- GPIO helpers ---------- */
+/* Motor 1 */
+#define M1_CWP_Port   GPIOB
+#define M1_CWP_Pin    GPIO_PIN_15
+#define M1_CWN_Port   GPIOB
+#define M1_CWN_Pin    GPIO_PIN_14
+#define M1_ENP_Port   GPIOB
+#define M1_ENP_Pin    GPIO_PIN_13
+#define M1_ENN_Port   GPIOB
+#define M1_ENN_Pin    GPIO_PIN_12
+#define M1_CLKN_Port  GPIOA
+#define M1_CLKN_Pin   GPIO_PIN_1
 
-static void Stepper_SetDirection(Motor_ID M, uint8_t dir)
+/* Motor 2 */
+#define M2_CWP_Port   GPIOB
+#define M2_CWP_Pin    GPIO_PIN_6
+#define M2_CWN_Port   GPIOB
+#define M2_CWN_Pin    GPIO_PIN_7
+#define M2_ENP_Port   GPIOB
+#define M2_ENP_Pin    GPIO_PIN_8
+#define M2_ENN_Port   GPIOC
+#define M2_ENN_Pin    GPIO_PIN_14
+#define M2_CLKN_Port  GPIOB
+#define M2_CLKN_Pin   GPIO_PIN_5
+
+/* Motor 3 */
+#define M3_CWP_Port   GPIOB
+#define M3_CWP_Pin    GPIO_PIN_0  /* PB0 = CW+ */
+#define M3_CWN_Port   GPIOB
+#define M3_CWN_Pin    GPIO_PIN_1
+#define M3_ENP_Port   GPIOB
+#define M3_ENP_Pin    GPIO_PIN_2
+#define M3_ENN_Port   GPIOB
+#define M3_ENN_Pin    GPIO_PIN_10
+#define M3_CLKN_Port  GPIOA
+#define M3_CLKN_Pin   GPIO_PIN_6
+
+/* ================================================================
+ * GPIO Helpers
+ * ================================================================ */
+
+void Stepper_SetDirection(Motor_ID M, uint8_t dir)
 {
-
-	switch (M) {
-		case LegMotor_1:
-		    if (dir == STEPPER_CW)
-		    {
-		        HAL_GPIO_WritePin(M1_CWP_Port, M1_CWP_Pin, GPIO_PIN_SET);    /* CW+ HIGH */
-		    }
-		    else
-		    {
-		        HAL_GPIO_WritePin(M1_CWP_Port, M1_CWP_Pin, GPIO_PIN_RESET);  /* CW+ LOW */
-		    }
-			break;
-		case LegMotor_2:
-		    if (dir == STEPPER_CW)
-		    {
-		        HAL_GPIO_WritePin(M2_CWP_Port, M2_CWP_Pin, GPIO_PIN_SET);    /* CW+ HIGH */
-		    }
-		    else
-		    {
-		        HAL_GPIO_WritePin(M2_CWP_Port, M2_CWP_Pin, GPIO_PIN_RESET);  /* CW+ LOW */
-		    }
-			break;
-		default:
-			break;
-	}
-
-
+    GPIO_PinState pin_state = (dir == STEPPER_CW) ? GPIO_PIN_SET : GPIO_PIN_RESET;
+    switch (M) {
+        case LegMotor_1: HAL_GPIO_WritePin(M1_CWP_Port, M1_CWP_Pin, pin_state); break;
+        case LegMotor_2: HAL_GPIO_WritePin(M2_CWP_Port, M2_CWP_Pin, pin_state); break;
+        case LegMotor_3: HAL_GPIO_WritePin(M3_CWP_Port, M3_CWP_Pin, pin_state); break;
+        default: break;
+    }
 }
 
 static void Stepper_SetEnable(Motor_ID M, uint8_t enable)
 {
-	switch (M) {
-		case LegMotor_1:
-		    if (enable)
-		    {
-		        HAL_GPIO_WritePin(M1_ENP_Port, M1_ENP_Pin, GPIO_PIN_RESET);  /* EN+ LOW = enabled (active low) */
-		    }
-		    else
-		    {
-		        HAL_GPIO_WritePin(M1_ENP_Port, M1_ENP_Pin, GPIO_PIN_SET);    /* EN+ HIGH = disabled */
-		    }
-			break;
-		case LegMotor_2:
-		    if (enable)
-		    {
-		        HAL_GPIO_WritePin(M2_ENP_Port, M2_ENP_Pin, GPIO_PIN_RESET);  /* EN+ LOW = enabled (active low) */
-		    }
-		    else
-		    {
-		        HAL_GPIO_WritePin(M2_ENP_Port, M2_ENP_Pin, GPIO_PIN_SET);    /* EN+ HIGH = disabled */
-		    }
-			break;
-		default:
-			break;
-	}
+    /* TB6560 active LOW enable: RESET = enabled, SET = disabled */
+    GPIO_PinState pin_state = enable ? GPIO_PIN_RESET : GPIO_PIN_SET;
+    switch (M) {
+        case LegMotor_1: HAL_GPIO_WritePin(M1_ENP_Port, M1_ENP_Pin, pin_state); break;
+        case LegMotor_2: HAL_GPIO_WritePin(M2_ENP_Port, M2_ENP_Pin, pin_state); break;
+        case LegMotor_3: HAL_GPIO_WritePin(M3_ENP_Port, M3_ENP_Pin, pin_state); break;
+        default: break;
+    }
 }
 
-/* ---------- Public functions ---------- */
+/* ================================================================
+ * Public API
+ * ================================================================ */
 
 void Stepper_Init(Motor_ID M)
 {
+    Stepper_Handle_t *h;
+    switch (M) {
+        case LegMotor_1: h = &stepper1; break;
+        case LegMotor_2: h = &stepper2; break;
+        case LegMotor_3: h = &stepper3; break;
+        default: return;
+    }
 
-	switch(M){
-		case LegMotor_1:
-		    stepper1.target_steps  = 0;
-		    stepper1.current_steps = 0;
-		    stepper1.state         = STEPPER_IDLE;
-		    stepper1.direction     = STEPPER_CW;
+    h->target_steps  = 0;
+    h->current_steps = 0;
+    h->state         = STEPPER_IDLE;
+    h->direction     = STEPPER_CW;
 
-		    HAL_GPIO_WritePin(M1_CLKN_Port, M1_CLKN_Pin,  GPIO_PIN_RESET);  /* CLK- LOW */
-		    HAL_GPIO_WritePin(M1_CWN_Port, M1_CWN_Pin, GPIO_PIN_RESET);  /* CW-  LOW */
-		    HAL_GPIO_WritePin(M1_ENN_Port, M1_ENN_Pin, GPIO_PIN_RESET);  /* EN-  LOW */
-		    /* Disable motor by default */
-		    Stepper_Disable(LegMotor_1);
-			break;
-		case LegMotor_2:
-		    stepper2.target_steps  = 0;
-		    stepper2.current_steps = 0;
-		    stepper2.state         = STEPPER_IDLE;
-		    stepper2.direction     = STEPPER_CW;
+    /* Set CLK-, CW-, EN- all LOW (your proven working init) */
+    switch (M) {
+        case LegMotor_1:
+            HAL_GPIO_WritePin(M1_CLKN_Port, M1_CLKN_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(M1_CWN_Port,  M1_CWN_Pin,  GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(M1_ENN_Port,  M1_ENN_Pin,  GPIO_PIN_RESET);
+            break;
+        case LegMotor_2:
+            HAL_GPIO_WritePin(M2_CLKN_Port, M2_CLKN_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(M2_CWN_Port,  M2_CWN_Pin,  GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(M2_ENN_Port,  M2_ENN_Pin,  GPIO_PIN_RESET);
+            break;
+        case LegMotor_3:
+            HAL_GPIO_WritePin(M3_CLKN_Port, M3_CLKN_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(M3_CWN_Port,  M3_CWN_Pin,  GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(M3_ENN_Port,  M3_ENN_Pin,  GPIO_PIN_RESET);
+            break;
+        default: break;
+    }
 
-		    HAL_GPIO_WritePin(M2_CLKN_Port, M2_CLKN_Pin,  GPIO_PIN_RESET);  /* CLK- LOW */
-		    HAL_GPIO_WritePin(M2_CWN_Port, M2_CWN_Pin, GPIO_PIN_RESET);  /* CW-  LOW */
-		    HAL_GPIO_WritePin(M2_ENN_Port, M2_ENN_Pin, GPIO_PIN_RESET);  /* EN-  LOW */
-		    /* Disable motor by default */
-		    Stepper_Disable(LegMotor_2);
-			break;
-		case LegMotor_3:
+    Stepper_Disable(M);
+}
 
-			break;
-		default:
-			break;
-	}
+void Stepper_Run(Motor_ID M, uint8_t dir)
+{
+    Stepper_Handle_t *h;
+    TIM_HandleTypeDef *tim;
+    uint32_t ch;
 
+    switch (M) {
+        case LegMotor_1: h = &stepper1; tim = &htim2; ch = TIM_CHANNEL_1; break;
+        case LegMotor_2: h = &stepper2; tim = &htim4; ch = TIM_CHANNEL_4; break;
+        default: return;
+    }
 
-    /* Set fixed-low pins */
+    if (h->state == STEPPER_RUNNING) Stepper_Stop(M);
 
+    h->direction     = dir;
+    h->target_steps  = 0;   /* 0 = free run */
+    h->current_steps = 0;
 
+    Stepper_SetDirection(M, dir);
+    Stepper_SetEnable(M, 1);
+    h->state = STEPPER_RUNNING;
 
-
-
-
-
+    HAL_TIM_PWM_Start(tim, ch);
+    __HAL_TIM_ENABLE_IT(tim, TIM_IT_UPDATE);
 }
 
 void Stepper_Move(Motor_ID M, int32_t steps)
 {
-	switch(M){
-	case LegMotor_1:
-	    if (steps == 0) return;
-	    if (stepper1.state == STEPPER_RUNNING) return;
+    if (steps == 0) return;
 
-	    /* Set direction based on sign */
-	    if (steps > 0)
-	    {
-	        stepper1.direction = STEPPER_CW;
-	        stepper1.target_steps = (uint32_t)steps;
-	    }
-	    else
-	    {
-	        stepper1.direction = STEPPER_CCW;
-	        stepper1.target_steps = (uint32_t)(-steps);
-	    }
+    Stepper_Handle_t *h;
+    TIM_HandleTypeDef *tim;
+    uint32_t ch;
 
-	    stepper1.current_steps = 0;
-	    stepper1.state = STEPPER_RUNNING;
+    switch (M) {
+        case LegMotor_1: h = &stepper1; tim = &htim2; ch = TIM_CHANNEL_1; break;
+        case LegMotor_2: h = &stepper2; tim = &htim4; ch = TIM_CHANNEL_4; break;
+        default: return;
+    }
 
-	    /* Set direction pin */
-	    Stepper_SetDirection(LegMotor_1, stepper1.direction);
+    if (h->state == STEPPER_RUNNING) return;
 
-	    /* Enable driver */
-	    Stepper_SetEnable(LegMotor_1, 1);
+    uint8_t  dir       = (steps > 0) ? STEPPER_CW : STEPPER_CCW;
+    uint32_t abs_steps = (steps > 0) ? (uint32_t)steps : (uint32_t)(-steps);
 
-	    /* Small delay for driver to settle */
-	//    HAL_Delay(1);
+    h->direction     = dir;
+    h->target_steps  = abs_steps;
+    h->current_steps = 0;
+    h->state         = STEPPER_RUNNING;
 
-	    /* Start PWM on TIM2 CH1 (PA0) - no MOE needed, TIM2 is general purpose */
-	    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-	    /* Enable TIM2 update interrupt to count pulses */
-	    __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
+    Stepper_SetDirection(M, dir);
+    Stepper_SetEnable(M, 1);
 
-		break;
-	case LegMotor_2:
-	    if (steps == 0) return;
-	    if (stepper2.state == STEPPER_RUNNING) return;
+    HAL_Delay(100);
 
-	    /* Set direction based on sign */
-	    if (steps > 0)
-	    {
-	        stepper2.direction = STEPPER_CW;
-	        stepper2.target_steps = (uint32_t)steps;
-	    }
-	    else
-	    {
-	        stepper2.direction = STEPPER_CCW;
-	        stepper2.target_steps = (uint32_t)(-steps);
-	    }
-
-	    stepper2.current_steps = 0;
-	    stepper2.state = STEPPER_RUNNING;
-
-	    /* Set direction pin */
-	    Stepper_SetDirection(LegMotor_2, stepper2.direction);
-
-	    /* Enable driver */
-	    Stepper_SetEnable(LegMotor_2, 1);
-	    /* Small delay for driver to settle */
-	//    HAL_Delay(1);
-
-	    /* Start PWM on TIM2 CH1 (PA0) - no MOE needed, TIM2 is general purpose */
-	    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-	    /* Enable TIM2 update interrupt to count pulses */
-	    __HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
-
-		break;
-	default:
-		break;
-	}
-
-
+    HAL_TIM_PWM_Start(tim, ch);
+    __HAL_TIM_ENABLE_IT(tim, TIM_IT_UPDATE);
 }
 
-void Stepper_Stop(Motor_ID M)
+uint32_t Stepper_Stop(Motor_ID M)
 {
-	switch(M){
-		case LegMotor_1:
-			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
-			__HAL_TIM_DISABLE_IT(&htim2, TIM_IT_UPDATE);
-			stepper1.current_steps = 0;
-			stepper1.target_steps  = 0;
-			stepper1.state = STEPPER_IDLE;
-			break;
-		case LegMotor_2:
-			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-			__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_UPDATE);
-			stepper2.current_steps = 0;
-			stepper2.target_steps  = 0;
-			stepper2.state = STEPPER_IDLE;
-			break;
-		default:
-			break;
-		}
+    Stepper_Handle_t *h;
+    TIM_HandleTypeDef *tim;
+    uint32_t ch;
 
+    switch (M) {
+        case LegMotor_1: h = &stepper1; tim = &htim2; ch = TIM_CHANNEL_1; break;
+        case LegMotor_2: h = &stepper2; tim = &htim4; ch = TIM_CHANNEL_4; break;
+        default: return 0;
+    }
 
+    HAL_TIM_PWM_Stop(tim, ch);
+    __HAL_TIM_DISABLE_IT(tim, TIM_IT_UPDATE);
+
+    uint32_t steps_taken = h->current_steps;
+    h->current_steps = 0;
+    h->target_steps  = 0;
+    h->state         = STEPPER_IDLE;
+
+    return steps_taken;
 }
 
-void Stepper_Enable(Motor_ID M)
-{
-	Stepper_SetEnable(M, 1);
-}
-
-void Stepper_Disable(Motor_ID M)
-{
-	Stepper_SetEnable(M, 0);
-}
+void Stepper_Enable(Motor_ID M)  { Stepper_SetEnable(M, 1); }
+void Stepper_Disable(Motor_ID M) { Stepper_SetEnable(M, 0); }
 
 uint8_t Stepper_IsBusy(Motor_ID M)
 {
-	switch(M){
-		case LegMotor_1:
-			return (stepper1.state == STEPPER_RUNNING) ? 1 : 0;
-			break;
-		case LegMotor_2:
-			return (stepper2.state == STEPPER_RUNNING) ? 1 : 0;
-			break;
-		default:
-			break;
-		}
+    switch (M) {
+        case LegMotor_1: return (stepper1.state == STEPPER_RUNNING) ? 1 : 0;
+        case LegMotor_2: return (stepper2.state == STEPPER_RUNNING) ? 1 : 0;
+        case LegMotor_3: return (stepper3.state == STEPPER_RUNNING) ? 1 : 0;
+        default: return 0;
+    }
 }
 
-/* ---------- IRQ Handler ---------- */
+/* ================================================================
+ * IRQ Handler — called from HAL_TIM_PeriodElapsedCallback
+ * ================================================================ */
 
 void Stepper_IRQ_Handler(Motor_ID M)
 {
-	switch(M){
-		case LegMotor_1:
-		    if (stepper1.state != STEPPER_RUNNING) return;
+    Stepper_Handle_t *h;
 
-		    stepper1.current_steps++;
+    switch (M) {
+        case LegMotor_1: h = &stepper1; break;
+        case LegMotor_2: h = &stepper2; break;
+        case LegMotor_3: h = &stepper3; break;
+        default: return;
+    }
 
-		    if (stepper1.current_steps >= stepper1.target_steps)
-		    {
-		        Stepper_Stop(LegMotor_1);
-		    }
-			break;
-		case LegMotor_2:
-		    if (stepper2.state != STEPPER_RUNNING) return;
+    if (h->state != STEPPER_RUNNING) return;
 
-		    stepper2.current_steps++;
+    h->current_steps++;
 
-		    if (stepper2.current_steps >= stepper2.target_steps)
-		    {
-		        Stepper_Stop(LegMotor_2);
-		    }
-			break;
-		default:
-			break;
-		}
-
+    /* If target_steps > 0: precise move, auto-stop at target */
+    if (h->target_steps > 0 && h->current_steps >= h->target_steps) {
+        Stepper_Stop(M);
+        /* board1.c polls Stepper_IsBusy and sends DONE response */
+    }
 }
-
-
-

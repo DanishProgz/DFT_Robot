@@ -59,10 +59,19 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
+#define M2_EN_NEG_Pin GPIO_PIN_14
+#define M2_EN_NEG_GPIO_Port GPIOC
 #define M1_CLK_POS_Pin GPIO_PIN_0
 #define M1_CLK_POS_GPIO_Port GPIOA
 #define M1_CLK_NEG_Pin GPIO_PIN_1
 #define M1_CLK_NEG_GPIO_Port GPIOA
+#define RS485_DERE_PIN_Pin GPIO_PIN_4
+#define RS485_DERE_PIN_GPIO_Port GPIOA
+#define ENC_CLK_Pin GPIO_PIN_5
+#define ENC_CLK_GPIO_Port GPIOA
+#define ENC_CLK_EXTI_IRQn EXTI9_5_IRQn
+#define ENC_DT_Pin GPIO_PIN_6
+#define ENC_DT_GPIO_Port GPIOA
 #define M1_EN_NEG_Pin GPIO_PIN_12
 #define M1_EN_NEG_GPIO_Port GPIOB
 #define M1_EN_POS_Pin GPIO_PIN_13
@@ -71,8 +80,9 @@ void Error_Handler(void);
 #define M1_CW_NEG_GPIO_Port GPIOB
 #define M1_CW_POS_Pin GPIO_PIN_15
 #define M1_CW_POS_GPIO_Port GPIOB
-#define M2_CLK_POS_Pin GPIO_PIN_4
-#define M2_CLK_POS_GPIO_Port GPIOB
+#define Drum_limit_switch_Pin GPIO_PIN_8
+#define Drum_limit_switch_GPIO_Port GPIOA
+#define Drum_limit_switch_EXTI_IRQn EXTI9_5_IRQn
 #define M2_CLK_NEG_Pin GPIO_PIN_5
 #define M2_CLK_NEG_GPIO_Port GPIOB
 #define M2_CW_POS_Pin GPIO_PIN_6
@@ -81,8 +91,8 @@ void Error_Handler(void);
 #define M2_CW_NEG_GPIO_Port GPIOB
 #define M2_EN_POS_Pin GPIO_PIN_8
 #define M2_EN_POS_GPIO_Port GPIOB
-#define M2_EN_NEG_Pin GPIO_PIN_9
-#define M2_EN_NEG_GPIO_Port GPIOB
+#define M2_CLK_POS_Pin GPIO_PIN_9
+#define M2_CLK_POS_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
